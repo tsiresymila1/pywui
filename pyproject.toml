@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "pywui"
-version = "0.1.0"
-description = ""
+version = "0.1.1"
+description = "Pywui is a Python package wrapper for pywebview to make easy the communication between python and JS"
 authors = ["Tsiresy Milà <tsiresymila@gmail.com>"]
 readme = "README.md"
 

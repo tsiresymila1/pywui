@@ -15,7 +15,7 @@
 
 ## Description
 
-<p>Pywui is a Python package wrapper for pywebview to make easy the communication between python and js </p>
+<p>Pywui is a Python package wrapper for pywebview to make easy the communication between python and JS </p>
 
 ## Getting started
 
