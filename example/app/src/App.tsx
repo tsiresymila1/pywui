@@ -3,12 +3,12 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 
-import { invoke, listen, emit } from './api'
-import { i } from "vite/dist/node/types.d-aGj9QkWt";
+import { emit, invoke, listen } from '@pywui/app'
 
 function App() {
     const [count, setCount] = useState(0)
     const [data, setData] = useState<string | undefined>()
+    const [time, setTime] = useState<string | undefined>("")
     const getData = useCallback(async () => {
         const result = await invoke<string>('greet')
         console.log(result)
@@ -17,8 +17,15 @@ function App() {
 
     useEffect(() => {
         console.log(window.pywebview)
+        const unlisten = listen<string>("time", function (type, data) {
+            setTime(data)
+        })
+        return () => unlisten()
+    }, [])
+
+    useEffect(() => {
+        console.log(window.pywebview)
         const unlisten = listen<string>("message", function (type, data) {
-            console.log(data)
             setData(data)
         })
         return () => unlisten()
@@ -26,7 +33,6 @@ function App() {
 
     useEffect(() => {
         const interval = setInterval(async () => {
-            console.log("Here")
             await emit<string>("message", Date.now().toString())
         }, 1000)
         return () => clearInterval(interval)
@@ -50,7 +56,7 @@ function App() {
                     Get data {data}
                 </button>
                 <p>
-                    Edit <code>src/App.tsx</code> and save to test HMR
+                    Time: {time}
                 </p>
             </div>
             <p className="read-the-docs">

@@ -1,27 +1,16 @@
-import os
+import asyncio
+import inspect
 import threading
-import time
 import typing
+from asyncio import AbstractEventLoop
 
 import webview
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
 from webview import GUIType, Menu, http, Screen
 
 from .api import PyWuiAPI
 from .di import PyWuiContainer
 from .dispatcher import EventDispatcher
 from .window import PyWuiWindow
-
-
-class ReloadHandler(FileSystemEventHandler):
-    def __init__(self, app: "PyWuiApp"):
-        self.app = app
-
-    def on_modified(self, event):
-        if event.src_path.endswith(".py"):
-            print(f"Detected change in {event.src_path}. Reloading window...")
-            self.app.restart()
 
 
 class PyWuiApp:
@@ -59,9 +48,10 @@ class PyWuiApp:
             http_port: int | None = None,
             server_args: http.ServerArgs = None
     ):
-        self._observer: Observer = None
-        self.webview_params = {}
-        self.window_params = {
+        self.loop: AbstractEventLoop = asyncio.new_event_loop()
+        self.loop_thread = threading.Thread(target=self._start_event_loop)
+        self.webview_params: dict[str, any] = {}
+        self.window_params: dict[str, any] = {
             "title": title,
             "url": url,
             "html": html,
@@ -96,14 +86,20 @@ class PyWuiApp:
         self._main_window = self.create_window(
             **self.window_params
         )
-        self.should_reload = False
+
+    def _start_event_loop(self):
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
+
+    def _stop_event_loop(self):
+        self.loop.call_soon_threadsafe(self.loop.stop)
+        self.loop_thread.join()
 
     def get_main_window(self) -> PyWuiWindow:
         return self._main_window
 
-    @classmethod
     def create_window(
-            cls,
+            self,
             title: str,
             url: str | None = None,
             html: str | None = None,
@@ -172,39 +168,15 @@ class PyWuiApp:
         dispatcher = EventDispatcher(window)
         setattr(window, 'emit', dispatcher.emit)
         setattr(window, 'listen', dispatcher.listen)
-        api = PyWuiAPI(window=window, commands=PyWuiContainer.instance().get_commands())
+        api = PyWuiAPI(loop=self.loop, window=window, commands=PyWuiContainer.instance().get_commands())
         window.expose(api.invoke, api.emit)
 
         return window
 
-    def start_file_watcher(self):
-        # Start a watchdog observer to monitor for file changes
-        event_handler = ReloadHandler(self)
-        self._observer = Observer()
-        self._observer.schedule(event_handler, path=os.getcwd(), recursive=True)
-        self._observer.start()
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            self._observer.stop()
-        self._observer.join()
-
-    def restart(self):
-        if self._observer:
-            self._observer.stop()
-            # self._observer.join()
-        self._main_window.destroy()
-        print("Restarted")
-        self._main_window = self.create_window(**self.window_params)
-        if threading.current_thread() is threading.main_thread():
-            webview.start(**self.webview_params)
-        else:
-            threading.Thread(target=self.restart, daemon=True).start()
-
-    def run(self,
-            on_start: typing.Callable[..., None] | None = None,
-            on_start_args: typing.Iterable[typing.Any] | None = None,
+    def run(
+            self,
+            func: typing.Callable[..., typing.Coroutine[typing.Any, typing.Any, None] | None] | None = None,
+            args: typing.Iterable[typing.Any] | None = None,
             localization: dict[str, str] = None,
             gui: GUIType | None = None,
             debug: bool = False,
@@ -218,12 +190,19 @@ class PyWuiApp:
             server_args: dict[typing.Any, typing.Any] = None,
             ssl: bool = False,
             icon: str | None = None
-            ):
+    ):
+
+        def on_start(*s_args, **kwargs):
+            if inspect.iscoroutinefunction(func):
+                asyncio.run_coroutine_threadsafe(func(*s_args, **kwargs), self.loop)
+            else:
+                func(*s_args, **kwargs)
+
         webview_params = {
             'func': on_start,
             'localization': localization or {},
             'gui': gui,
-            'args': on_start_args if on_start_args is not None else [],
+            'args': args if args is not None else [],
             'debug': debug,
             'http_server': http_server,
             'http_port': http_port,
@@ -237,6 +216,6 @@ class PyWuiApp:
             'icon': icon,
         }
         self.webview_params = webview_params
-        # if debug:
-        #     threading.Thread(target=self.start_file_watcher, daemon=True).start()
+        self._main_window.events.closing += self._stop_event_loop
+        self.loop_thread.start()
         webview.start(**webview_params)

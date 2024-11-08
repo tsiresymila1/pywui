@@ -417,6 +417,11 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@pywui/app@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@pywui/app/-/app-1.0.0.tgz#ac3b995c18b348b9e206ed1ae0b609816b2f6abd"
+  integrity sha512-sBGsMESS+CE8kSJcMzsqqliFWlvz+B5V5uV4qJfjFMbXbpVeSEyZwCCcEA6zwz56sHzVL6gK1MN5RLM1ogP7Cg==
+
 "@rollup/rollup-android-arm-eabi@4.24.4":
   version "4.24.4"
   resolved "https://registry.yarnpkg.com/@rollup/rollup-android-arm-eabi/-/rollup-android-arm-eabi-4.24.4.tgz#c460b54c50d42f27f8254c435a4f3b3e01910bc8"

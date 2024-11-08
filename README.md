@@ -15,7 +15,7 @@
 
 ## Description
 
-<p>Pywui is a Python package wrapper for pywebview to make easy the communication between python and JS </p>
+<p>Pywui is a Python package wrapper for pywebview to make easy the communication between python and JS and async support. </p>
 
 ## Getting started
 
@@ -26,31 +26,41 @@
 ## Exampple
 
 ```python
-import webview
+import asyncio
+from datetime import datetime
 
 from pywui import command, PyWuiApp, PyWuiWindow, listener
 
 
 @listener("message", inject_window=True)
-def on_message(window: PyWuiWindow, message: str):
-    print("Message received: {!r}".format(message))
+async def on_message(window: PyWuiWindow, message: str):
+    print("Message received: {}".format(message))
 
 
 @command(inject_window=True)
-def greet(window: PyWuiWindow):
+async def greet(window: PyWuiWindow):
     # window.toggle_fullscreen()
     window.emit("message", "Hello from python")
     print("Hello :::", window)
     return "Hello World!"
 
 
+async def on_start(window: PyWuiWindow):
+    async def send_time():
+        while True:
+            window.emit("time", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            await asyncio.sleep(1)
+
+    await asyncio.create_task(send_time())
+
+
 app = PyWuiApp(
     "Main Window",
     'http://localhost:5174',
-    confirm_close=True
+    confirm_close=False
 )
 main_window = app.get_main_window()
-app.run(debug=True)
+app.run(func=on_start, args=[main_window], debug=True)
 
 
 ```
