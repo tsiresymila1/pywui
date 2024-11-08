@@ -17,7 +17,7 @@ function App() {
 
     useEffect(() => {
         console.log(window.pywebview)
-        const unlisten = listen<string>("time", function (type, data) {
+        const unlisten = listen<string>("time", function (_, data) {
             setTime(data)
         })
         return () => unlisten()
@@ -25,7 +25,7 @@ function App() {
 
     useEffect(() => {
         console.log(window.pywebview)
-        const unlisten = listen<string>("message", function (type, data) {
+        const unlisten = listen<string>("message", function (_, data) {
             setData(data)
         })
         return () => unlisten()
@@ -33,7 +33,7 @@ function App() {
 
     useEffect(() => {
         const interval = setInterval(async () => {
-            await emit<string>("message", Date.now().toString())
+            await emit<string>("message", new Date().toISOString())
         }, 1000)
         return () => clearInterval(interval)
     }, [])

@@ -1,0 +1,2 @@
+pyinstaller --onefile --noconfirm --name pywui --add-data "app/dist:."  --add-data "pywui.json:." --add-data "icons:icons"  --icon icons/pywui.icns  --windowed main.py
+--specpath /tmp && rm /tmp/pywui.spec

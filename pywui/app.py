@@ -1,10 +1,16 @@
 import asyncio
 import inspect
+import os.path
+import platform
+import sys
 import threading
 import typing
 from asyncio import AbstractEventLoop
+from urllib.parse import urlparse
 
+import ujson
 import webview
+from ujson import JSONDecodeError
 from webview import GUIType, Menu, http, Screen
 
 from .api import PyWuiAPI
@@ -17,8 +23,7 @@ class PyWuiApp:
 
     def __init__(
             self,
-            title: str,
-            url: str | None = None,
+            title: str | None = None,
             html: str | None = None,
             width: int = 800,
             height: int = 600,
@@ -51,9 +56,15 @@ class PyWuiApp:
         self.loop: AbstractEventLoop = asyncio.new_event_loop()
         self.loop_thread = threading.Thread(target=self._start_event_loop)
         self.webview_params: dict[str, any] = {}
-        self.window_params: dict[str, any] = {
-            "title": title,
-            "url": url,
+        self.config = self._load_config()
+        static: dict[str, any] = self.config.get("static")
+        index = self._resource_path(static.get("main"))
+        dev_url = static.get("dev_url")
+        app_url = index if self._is_frozen else dev_url
+
+        self.window_params: dict[str, any] = self._merge_config({
+            "title": title or "PyWui App",
+            "url": app_url,
             "html": html,
             "width": width,
             "height": height,
@@ -82,10 +93,44 @@ class PyWuiApp:
             "server": server,
             "http_port": http_port,
             "server_args": server_args or {},
-        }
+        }, self.config.get("window", {}))
         self._main_window = self.create_window(
             **self.window_params
         )
+
+    @property
+    def _is_frozen(self):
+        return hasattr(sys, '_MEIPASS')
+
+    @classmethod
+    def _merge_config(cls, dict1, dict2):
+        return {key: (dict2.get(key) if key in dict2 and dict2.get(key) is not None else dict1[key]) for key in dict1}
+
+    def _load_config(self) -> dict[str, typing.Any]:
+        config_path = self._resource_path('pywui.json')
+        if os.path.exists(config_path):
+            with open(config_path) as f:
+                try:
+                    return ujson.load(f)
+                except JSONDecodeError:
+                    return {}
+        return {}
+
+    def _get_icon(self):
+        current_os = platform.system().lower()
+        icons: dict[str, typing.Any] = self.config.get("icons", {})
+        icon = icons.get(current_os, icons.get("linux"))
+        return self._resource_path(icon) if icon else None
+
+    def _resource_path(self, relative_path):
+        if self._is_frozen:
+            return os.path.join(getattr(sys, '_MEIPASS'), relative_path)
+        return os.path.join(os.path.abspath('.'), relative_path)
+
+    @classmethod
+    def is_url(cls, string):
+        parsed = urlparse(string)
+        return all([parsed.scheme, parsed.netloc])
 
     def _start_event_loop(self):
         asyncio.set_event_loop(self.loop)
@@ -120,8 +165,8 @@ class PyWuiApp:
             maximized: bool = False,
             on_top: bool = False,
             confirm_close: bool = False,
-            background_color: str = '#FFFFFF',
-            transparent: bool = False,
+            background_color: str = '#FFFFFFFF',
+            transparent: bool = True,
             text_select: bool = False,
             zoomable: bool = False,
             draggable: bool = False,
@@ -203,7 +248,7 @@ class PyWuiApp:
             'localization': localization or {},
             'gui': gui,
             'args': args if args is not None else [],
-            'debug': debug,
+            'debug': False if self._is_frozen else debug,
             'http_server': http_server,
             'http_port': http_port,
             'user_agent': user_agent,
@@ -213,7 +258,7 @@ class PyWuiApp:
             'server': server,
             'server_args': server_args or {},
             'ssl': ssl,
-            'icon': icon,
+            'icon': icon or self._get_icon(),
         }
         self.webview_params = webview_params
         self._main_window.events.closing += self._stop_event_loop

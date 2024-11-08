@@ -13,7 +13,6 @@ async def on_message(window: PyWuiWindow, message: str):
 async def greet(window: PyWuiWindow):
     # window.toggle_fullscreen()
     window.emit("message", "Hello from python")
-    print("Hello :::", window)
     return "Hello World!"
 
 
@@ -26,10 +25,6 @@ async def on_start(window: PyWuiWindow):
     await asyncio.create_task(send_time())
 
 
-app = PyWuiApp(
-    "Main Window",
-    'http://localhost:5174',
-    confirm_close=False
-)
+app = PyWuiApp()
 main_window = app.get_main_window()
 app.run(func=on_start, args=[main_window], debug=True)

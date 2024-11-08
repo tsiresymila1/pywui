@@ -5,4 +5,5 @@ venv
 *.cpyth
 .idea
 dist
+build
 docs
