@@ -1,15 +1,17 @@
 import asyncio
 from datetime import datetime
 
-from pywui import command, PyWuiApp, PyWuiWindow, listener
+from pywui import command, PyWuiApp, PyWuiWindow, listener, with_window
 
 
-@listener("message", inject_window=True)
+@with_window
+@listener("message")
 async def on_message(window: PyWuiWindow, message: str):
     print("Message received: {}".format(message))
 
 
-@command(inject_window=True)
+@with_window
+@command()
 async def greet(window: PyWuiWindow):
     # window.toggle_fullscreen()
     window.emit("message", "Hello from python")
@@ -26,5 +28,5 @@ async def on_start(window: PyWuiWindow):
 
 
 app = PyWuiApp()
-main_window = app.get_main_window()
+main_window = app.get_window('main')
 app.run(func=on_start, args=[main_window], debug=True)

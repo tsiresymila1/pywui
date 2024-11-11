@@ -5,12 +5,12 @@
     "height": 600,
     "resizable": true,
     "fullscreen": false,
-    "frameless": false,
-    "icons": {
-      "windows": "icons/icon.ico",
-      "macos": "icons/icon.icns",
-      "linux": "icons/icon.png"
-    }
+    "frameless": false
+  },
+  "icons": {
+    "windows": "icons/icon.ico",
+    "macos": "icons/icon.icns",
+    "linux": "icons/icon.png"
   },
   "static": {
     "main": "index.html",

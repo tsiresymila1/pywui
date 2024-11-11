@@ -1,25 +1,28 @@
 import asyncio
 import inspect
 import traceback
-from asyncio import AbstractEventLoop
+import typing
 from typing import Callable
 
-from .decorator import INJECT_WINDOW
+from .decorator import INJECT_WINDOW, INJECT_APP
 from .di import PyWuiContainer
 from .window import PyWuiWindow
+
+if typing.TYPE_CHECKING:
+    from .app import PyWuiApp
 
 
 class PyWuiAPI:
     window: PyWuiWindow = None
 
-    def __init__(self, loop: AbstractEventLoop, window: PyWuiWindow, commands: dict[str, Callable]):
+    def __init__(self, app: "PyWuiApp", window: PyWuiWindow, commands: dict[str, Callable]):
         self.commands: dict[str, Callable] = commands
-        self.loop = loop
+        self.app = app
         self.window = window
 
     def execute_function(self, func: Callable, *args, **kwargs):
         if inspect.iscoroutinefunction(func):
-            future = asyncio.run_coroutine_threadsafe(func(*args, **kwargs), self.loop)
+            future = asyncio.run_coroutine_threadsafe(func(*args, **kwargs), self.app.loop)
             return future.result()
         else:
             return func(*args, **kwargs)
@@ -28,11 +31,14 @@ class PyWuiAPI:
         listeners = PyWuiContainer.instance().get_listeners()
         if event in listeners:
             listener = listeners[event]
-            inject = getattr(listener, INJECT_WINDOW, False)
-            if inject:
-                self.execute_function(listener, self.window, *args, **kwargs)
-            else:
-                self.execute_function(listener, *args, **kwargs)
+            app = getattr(listener, INJECT_APP, False)
+            win = getattr(listener, INJECT_WINDOW, False)
+            inject_args: list = []
+            if app:
+                inject_args.append(self.app)
+            if win:
+                inject_args.append(self.window)
+            self.execute_function(listener, *inject_args, *args, **kwargs)
 
     def invoke(self, command_name: str, *args, **kwargs):
         """Executes a registered command and returns the result as JSON."""

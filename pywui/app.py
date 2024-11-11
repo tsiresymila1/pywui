@@ -53,6 +53,7 @@ class PyWuiApp:
             http_port: int | None = None,
             server_args: http.ServerArgs = None
     ):
+        self.windows: dict[str, PyWuiWindow] = {}
         self.loop: AbstractEventLoop = asyncio.new_event_loop()
         self.loop_thread = threading.Thread(target=self._start_event_loop)
         self.webview_params: dict[str, any] = {}
@@ -94,7 +95,7 @@ class PyWuiApp:
             "http_port": http_port,
             "server_args": server_args or {},
         }, self.config.get("window", {}))
-        self._main_window = self.create_window(
+        self.create_window(
             **self.window_params
         )
 
@@ -107,7 +108,7 @@ class PyWuiApp:
         return {key: (dict2.get(key) if key in dict2 and dict2.get(key) is not None else dict1[key]) for key in dict1}
 
     def _load_config(self) -> dict[str, typing.Any]:
-        config_path = self._resource_path('pywui.json')
+        config_path = self._resource_path('pywui.conf.json')
         if os.path.exists(config_path):
             with open(config_path) as f:
                 try:
@@ -140,8 +141,10 @@ class PyWuiApp:
         self.loop.call_soon_threadsafe(self.loop.stop)
         self.loop_thread.join()
 
-    def get_main_window(self) -> PyWuiWindow:
-        return self._main_window
+    def get_window(self, key: str) -> PyWuiWindow:
+        if key in self.windows:
+            return self.windows[key]
+        raise KeyError(key)
 
     def create_window(
             self,
@@ -213,8 +216,9 @@ class PyWuiApp:
         dispatcher = EventDispatcher(window)
         setattr(window, 'emit', dispatcher.emit)
         setattr(window, 'listen', dispatcher.listen)
-        api = PyWuiAPI(loop=self.loop, window=window, commands=PyWuiContainer.instance().get_commands())
+        api = PyWuiAPI(app=self, window=window, commands=PyWuiContainer.instance().get_commands())
         window.expose(api.invoke, api.emit)
+        self.windows['main' if window.uid == "master" else window.uid] = window
 
         return window
 
@@ -261,6 +265,8 @@ class PyWuiApp:
             'icon': icon or self._get_icon(),
         }
         self.webview_params = webview_params
-        self._main_window.events.closing += self._stop_event_loop
+        self.get_window('main').events.closing += self._stop_event_loop
         self.loop_thread.start()
+        if gui == "qt":
+            webview.settings['OPEN_DEVTOOLS_IN_DEBUG'] = False
         webview.start(**webview_params)

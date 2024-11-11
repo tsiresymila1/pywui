@@ -1,4 +1,4 @@
-from .decorator import command, listener
+from .decorator import command, listener, with_app, with_window
 from .dispatcher import EventDispatcher
 from .app import PyWuiApp
 from .window import PyWuiWindow
@@ -8,6 +8,8 @@ __slots__ = [
     "PyWuiApp",
     "command",
     "listener",
+    "with_window",
+    "with_app"
     "EventDispatcher"
 ]
 
