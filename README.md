@@ -29,7 +29,7 @@
     pywui new my_projet
 ```
 
-## Exampple
+## Example
 
 ```python
 import asyncio
