@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "pywui"
-version = "0.1.4"
+version = "0.1.6"
 description = "Pywui is a Python package wrapper for pywebview to make easy the communication between python and JS and async support."
 authors = ["Tsiresy Milà <tsiresymila@gmail.com>"]
 readme = "README.md"
+keywords = ["pywui", "pywebview", "pyinstaller", "tauri", "vite"]
 
 [tool.poetry.dependencies]
 python = "^3.10"

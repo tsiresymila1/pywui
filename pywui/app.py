@@ -118,7 +118,7 @@ class PyWuiApp:
         return {}
 
     def _get_icon(self):
-        current_os = platform.system().lower()
+        current_os = str.lower(platform.system().lower())
         icons: dict[str, typing.Any] = self.config.get("icons", {})
         icon = icons.get(current_os, icons.get("linux"))
         return self._resource_path(icon) if icon else None
