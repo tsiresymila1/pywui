@@ -20,7 +20,13 @@
 ## Getting started
 
 ```cmd
-    pip install pywui
+    pip install pywui_cli
+```
+
+## Create new project
+
+```cmd
+    pywui new my_projet
 ```
 
 ## Exampple
