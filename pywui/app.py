@@ -13,6 +13,8 @@ import webview
 from ujson import JSONDecodeError
 from webview import GUIType, Menu, http, Screen
 
+from watchfiles import watch
+
 from .api import PyWuiAPI
 from .di import PyWuiContainer
 from .dispatcher import EventDispatcher
@@ -58,6 +60,7 @@ class PyWuiApp:
         self.loop_thread = threading.Thread(target=self._start_event_loop)
         self.webview_params: dict[str, any] = {}
         self.config = self._load_config()
+        self.stop_event = threading.Event()
         static: dict[str, any] = self.config.get("static")
         index = self._resource_path(static.get("main"))
         dev_url = static.get("dev_url")
@@ -140,6 +143,7 @@ class PyWuiApp:
     def _stop_event_loop(self):
         self.loop.call_soon_threadsafe(self.loop.stop)
         self.loop_thread.join()
+        self.stop_event.set()
 
     def get_window(self, key: str) -> PyWuiWindow:
         if key in self.windows:
@@ -229,6 +233,7 @@ class PyWuiApp:
             localization: dict[str, str] = None,
             gui: GUIType | None = None,
             debug: bool = False,
+            reload: bool = False,
             http_server: bool = False,
             http_port: int | None = None,
             user_agent: str | None = None,
@@ -269,4 +274,20 @@ class PyWuiApp:
         self.loop_thread.start()
         if gui == "qt":
             webview.settings['OPEN_DEVTOOLS_IN_DEBUG'] = False
+        if reload:
+            threading.Thread(target=self.watch_files, daemon=True).start()
         webview.start(**webview_params)
+
+    @classmethod
+    def restart_app(cls):
+        print("File changed. Restarting the application...")
+        os.execv(sys.executable, ['python'] + sys.argv)
+
+    # File watching function
+    def watch_files(self):
+        for changes in watch(os.getcwd()):
+            if self.stop_event.is_set():  # Check if stop signal is set
+                print("Stopping file watcher...")
+                break
+            print(f"Files changed: {changes}")
+            self.restart_app()

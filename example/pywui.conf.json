@@ -8,13 +8,13 @@
     "frameless": false
   },
   "icons": {
-    "windows": "icons/icon.ico",
-    "macos": "icons/icon.icns",
-    "linux": "icons/icon.png"
+    "windows": "icons/pywui.ico",
+    "darwin": "icons/pywui.icns",
+    "linux": "icons/pywui.png"
   },
   "static": {
     "main": "index.html",
-    "dev_url": "http://localhost:5173",
+    "dev_url": "http://localhost:5174",
     "base_path": "app/dist"
   }
 }

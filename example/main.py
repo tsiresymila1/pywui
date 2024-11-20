@@ -29,4 +29,4 @@ async def on_start(window: PyWuiWindow):
 
 app = PyWuiApp()
 main_window = app.get_window('main')
-app.run(func=on_start, args=[main_window], debug=True)
+app.run(func=on_start, args=[main_window], debug=True, reload=True)
